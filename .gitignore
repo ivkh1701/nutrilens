@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+dist-ssr/
+*.local
+
+# Env files – NEVER commit secrets
+.env
+.env.local
+.env.production
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+.vscode/settings.json
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Supabase local dev
+supabase/.branches
+supabase/.temp
+
+# Test coverage
+coverage/
