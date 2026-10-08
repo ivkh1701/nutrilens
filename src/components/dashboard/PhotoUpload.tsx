@@ -102,7 +102,6 @@ export function PhotoUpload({ userId, onAnalysisReady, onError }: Props) {
         ref={inputRef}
         type="file"
         accept="image/*"
-        capture="environment"
         className="hidden"
         onChange={handleFileChange}
         aria-label="Select meal photo"
