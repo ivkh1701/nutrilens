@@ -85,46 +85,47 @@ export function PhotoUpload({ userId, onAnalysisReady, onError }: Props) {
         <p>Take a photo or upload one to identify foods and estimate nutrition with Gemini.</p>
         <div className="upload-actions">
 
-          {/* Use a <label> instead of button + programmatic click.
-              iOS Safari treats label clicks as direct user gestures,
-              which is required to open the file/gallery picker. */}
-          <label
-            htmlFor="photo-file-input"
-            className="primary"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              cursor: uploading ? 'not-allowed' : 'pointer',
-              opacity: uploading ? 0.6 : 1,
-            }}
-          >
-            📷 &nbsp; Take photo or upload
-          </label>
+          {/*
+            iOS Safari only opens the gallery when the file input itself is
+            tapped directly (a true user gesture). We achieve this by:
+            1. Wrapping button + input in a relative container
+            2. Stretching the transparent input over the button with inset:0
+            3. The button has pointer-events:none so taps pass through to the input
+            This avoids any programmatic .click() or label indirection.
+          */}
+          <div style={{ position: 'relative', display: 'inline-block' }}>
+            <button
+              className="primary"
+              disabled={uploading}
+              style={{ pointerEvents: 'none' }}
+              tabIndex={-1}
+              aria-hidden="true"
+            >
+              📷 &nbsp; {uploading ? 'Uploading…' : 'Take photo or upload'}
+            </button>
+
+            <input
+              ref={inputRef}
+              type="file"
+              accept="image/*,image/heic,image/heif"
+              onChange={handleFileChange}
+              disabled={uploading}
+              style={{
+                position: 'absolute',
+                inset: 0,
+                opacity: 0,
+                cursor: 'pointer',
+                width: '100%',
+                height: '100%',
+                fontSize: 0,
+              }}
+              aria-label="Take photo or choose from gallery"
+            />
+          </div>
 
           <span className="gemini-tag">✦ Gemini food scan</span>
         </div>
       </div>
-
-      {/* Visually hidden but NOT display:none — iOS requires the input to
-          be in the accessibility tree for the label association to work. */}
-      <input
-        id="photo-file-input"
-        ref={inputRef}
-        type="file"
-        accept="image/*,image/heic,image/heif"
-        onChange={handleFileChange}
-        disabled={uploading}
-        style={{
-          position: 'absolute',
-          width: 1,
-          height: 1,
-          opacity: 0,
-          overflow: 'hidden',
-          pointerEvents: 'none',
-        }}
-        aria-label="Select meal photo"
-      />
 
       {uploadError && (
         <p className="upload-error" role="alert">{uploadError}</p>
