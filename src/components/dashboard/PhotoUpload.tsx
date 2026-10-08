@@ -31,7 +31,6 @@ export function PhotoUpload({ userId, onAnalysisReady, onError }: Props) {
     setUploadError(null)
 
     try {
-      // 1. Upload photo to private storage under the user's folder
       const ext = file.name.split('.').pop() ?? 'jpg'
       const path = `${userId}/${Date.now()}.${ext}`
       const { error: uploadErr } = await supabase.storage
@@ -39,8 +38,6 @@ export function PhotoUpload({ userId, onAnalysisReady, onError }: Props) {
         .upload(path, file, { cacheControl: '3600', upsert: false })
       if (uploadErr) { setUploadError(uploadErr.message); return }
 
-      // 2. Call the Edge Function — it validates the JWT, fetches the image
-      //    server-side, and sends it to Gemini. API keys never touch the browser.
       const { data: { session } } = await supabase.auth.getSession()
       const resp = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-meal`,
@@ -87,23 +84,45 @@ export function PhotoUpload({ userId, onAnalysisReady, onError }: Props) {
         <h2>Add meal photo</h2>
         <p>Take a photo or upload one to identify foods and estimate nutrition with Gemini.</p>
         <div className="upload-actions">
-          <button
+
+          {/* Use a <label> instead of button + programmatic click.
+              iOS Safari treats label clicks as direct user gestures,
+              which is required to open the file/gallery picker. */}
+          <label
+            htmlFor="photo-file-input"
             className="primary"
-            onClick={() => inputRef.current?.click()}
-            disabled={uploading}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              cursor: uploading ? 'not-allowed' : 'pointer',
+              opacity: uploading ? 0.6 : 1,
+            }}
           >
             📷 &nbsp; Take photo or upload
-          </button>
+          </label>
+
           <span className="gemini-tag">✦ Gemini food scan</span>
         </div>
       </div>
 
+      {/* Visually hidden but NOT display:none — iOS requires the input to
+          be in the accessibility tree for the label association to work. */}
       <input
+        id="photo-file-input"
         ref={inputRef}
         type="file"
-        accept="image/*"
-        className="hidden"
+        accept="image/*,image/heic,image/heif"
         onChange={handleFileChange}
+        disabled={uploading}
+        style={{
+          position: 'absolute',
+          width: 1,
+          height: 1,
+          opacity: 0,
+          overflow: 'hidden',
+          pointerEvents: 'none',
+        }}
         aria-label="Select meal photo"
       />
 
@@ -115,31 +134,15 @@ export function PhotoUpload({ userId, onAnalysisReady, onError }: Props) {
         <div className="scan-preview">
           <img src={preview.url} alt="Selected meal preview" />
           <div style={{ flex: 1, minWidth: 0 }}>
-            <strong
-              style={{
-                display: 'block',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
-            >
+            <strong style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {preview.name}
             </strong>
             <span>{uploading ? 'Uploading & analyzing…' : 'Ready for Gemini analysis'}</span>
           </div>
-          <button
-            className="text-button"
-            onClick={handleAnalyze}
-            disabled={uploading}
-          >
+          <button className="text-button" onClick={handleAnalyze} disabled={uploading}>
             {uploading ? '…' : 'Analyze'}
           </button>
-          <button
-            className="icon-button"
-            onClick={clearSelection}
-            aria-label="Remove photo"
-            disabled={uploading}
-          >
+          <button className="icon-button" onClick={clearSelection} aria-label="Remove photo" disabled={uploading}>
             ✕
           </button>
         </div>
